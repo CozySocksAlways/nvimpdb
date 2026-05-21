@@ -3,6 +3,16 @@ import sys
 import subprocess
 import logging
 from pathlib import Path
+from types import FrameType
+
+#TODO
+# -1. Make pdb silent, don't have to print the line now
+# 0. Add the package to path or something so that it can easily installed
+# 1. There is a exception on exit fix that
+# 2. Check if file changed before loading file again
+# 3. Add the breakpoint to snippet
+# 4. Look at using breakpoint()
+# 5. Instantiate NvimPdb only once
 
 NVIM_SERVER = "/tmp/pdb_nvim"
 log_file = Path.home() / "logs" / "nvim_pdb.log"
@@ -29,13 +39,22 @@ class NvimPdb(pdb.Pdb):
         print("Welome to Pdb Integrated with Nvim")
         super().__init__(*args, **kwargs)
 
+        # Some basic visual stuff
+        #TODO: there was setcursorline here which was added to rc,
+        # that caused relativenumber! below this to fail
+        nvim_cmd("<Esc>:set relativenumber!<CR>")
+
     # Override user_line
-    def user_line(self, frame):
+    def user_line(self, frame: FrameType) -> None:
         filename = frame.f_code.co_filename
+        lineno = frame.f_lineno
 
-        # testing: echo the filename in neovim
-        nvim_cmd(f"<Esc>:echo \"{filename}\"<CR>")
-
+        nvim_cmd((
+            "<Esc>"
+            f":view {filename}<CR>"
+            f":{lineno}<CR>"
+            "zz"
+            ))
         super().user_line(frame)
 
 def nbreak():
